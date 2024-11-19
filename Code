@@ -1,0 +1,64 @@
+#You should create one R script called run_analysis.R that does the following. 
+
+#Merges the training and the test sets to create one data set.
+#Extracts only the measurements on the mean and standard deviation for each measurement. 
+#Uses descriptive activity names to name the activities in the data set
+#Appropriately labels the data set with descriptive variable names. 
+#From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+
+
+# Note. I would like to declare and express sincere appreciation for AsaeedSh for inspiration of the codes. The source of the code ideas is from this RPubs link: https://rpubs.com/ASaeedSh/data-cleaning-project-week-4. 
+
+
+subject_test = read.table('/Users/anthonyshin/Downloads/UCI HAR Dataset/test/subject_test.txt', header = FALSE)
+X_test = read.table('/Users/anthonyshin/Downloads/UCI HAR Dataset/test/X_test.txt', header = FALSE)
+y_test = read.table('/Users/anthonyshin/Downloads/UCI HAR Dataset/test/y_test.txt', header = FALSE)
+
+subject_train = read.table('/Users/anthonyshin/Downloads/UCI HAR Dataset/train/subject_train.txt', header = FALSE)
+X_train = read.table("/Users/anthonyshin/Downloads/UCI HAR Dataset/train/X_train.txt", header = FALSE)
+y_train = read.table("/Users/anthonyshin/Downloads/UCI HAR Dataset/train/y_train.txt", header = FALSE)
+
+features = read.table("/Users/anthonyshin/Downloads/UCI HAR Dataset/features.txt", header = FALSE)
+activity_labels = read.table('/Users/anthonyshin/Downloads/UCI HAR Dataset/activity_labels.txt', header = FALSE)
+
+#Create Sanity and Column Values to the Train Data
+colnames(X_train) = features[,2]
+colnames(y_train) = "activityId"
+colnames(subject_train) = "subjectId"
+#Create Sanity and column values to the test data
+colnames(X_test) = features[,2]
+colnames(y_test) = "activityId"
+colnames(subject_test) = "subjectId"
+#Create sanity check for the activity labels value
+colnames(activity_labels) <- c('activityId','activityType')
+
+#####
+
+#Merging the train and test data - important outcome of the project
+train_merged = cbind(y_train, subject_train, X_train)
+test_merged = cbind(y_test, subject_test, X_test)
+#Create the main data table merging both table tables - this is the outcome of 1
+setAllInOne = rbind(train_merged, test_merged)
+
+#######
+View(setAllInOne)
+
+######
+
+# Need step is to read all the values that are available
+colNames = colnames(setAllInOne)
+#Need to get a subset of all the mean and standards and the correspondongin activityID and subjectID 
+mean_and_std = (grepl("activityId" , colNames) | grepl("subjectId" , colNames) | grepl("mean.." , colNames) | grepl("std.." , colNames))
+#A subtset has to be created to get the required dataset
+setForMeanAndStd <- setAllInOne[ , mean_and_std == TRUE]
+
+setWithActivityNames = merge(setForMeanAndStd, activity_labels, by='activityId', all.x=TRUE)
+
+
+
+# New tidy set has to be created 
+secTidySet <- aggregate(. ~subjectId + activityId, setWithActivityNames, mean)
+secTidySet <- secTidySet[order(secTidySet$subjectId, secTidySet$activityId),]
+
+#The last step is to write the ouput to a text file 
+write.table(secTidySet, "secTidySet.txt", row.name=FALSE)
